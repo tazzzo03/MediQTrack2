@@ -357,9 +357,11 @@ document.addEventListener('click', async function(e) {
     }
 
     try {
-      const res = await fetch(`{{ url('/api/next-patient') }}/${roomId}`, {
-        method: 'POST',
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const res = await fetch(`/clinic/queue/next/${roomId}`, {
+        method: 'PATCH',
         headers: {
+          'X-CSRF-TOKEN': token,
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
