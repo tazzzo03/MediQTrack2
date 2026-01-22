@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clinic Operational Report</title>
+    <style>
+        * {
+            font-family: DejaVu Sans, sans-serif;
+        }
+
+        body {
+            font-size: 12px;
+            color: #1f2937;
+            margin: 25px;
+        }
+
+        /* HEADER */
+        .report-header {
+            display: table;
+            width: 100%;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .report-header .logo,
+        .report-header .title {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .report-header .logo {
+            width: 90px;
+        }
+
+        .report-header img {
+            width: 80px;
+            height: auto;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .meta {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* SECTION */
+        .section {
+            margin-top: 35px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-left: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+        }
+
+        /* FOOTER */
+        .footer {
+            margin-top: 35px;
+            font-size: 10px;
+            color: #6b7280;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 10px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    @php
+        $logoPath = public_path('images/app_icon.png');
+        $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    @endphp
+
+    <!-- HEADER -->
+    <div class="report-header">
+        <div class="logo">
+            @if ($logoData)
+                <img src="data:image/png;base64,{{ $logoData }}" alt="MediQTrack Logo">
+            @endif
+        </div>
+        <div class="title">
+            <h1>Clinic Operational Report {{ $label }}</h1>
+            <div class="meta">
+                Period: {{ $start->format('d M Y') }} – {{ $end->format('d M Y') }} <br>
+                Generated at: {{ now()->format('d M Y, h:i A') }}
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 1 -->
+    <div class="section">
+        <div class="section-title">1. Clinic Details</div>
+        <table>
+            <tr>
+                <th>Clinic Name</th>
+                <td>{{ $clinicUser->name ?? '-' }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ $clinicUser->email ?? '-' }}</td>
+            </tr>
+            <tr>
+                <th>Phone</th>
+                <td>{{ $clinicUser->phone ?? '-' }}</td>
+            </tr>
+            <tr>
+                <th>Address</th>
+                <td>{{ $clinicUser->address ?? '-' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- SECTION 2 -->
+    <div class="section">
+        <div class="section-title">2. Clinic Performance Summary</div>
+        <table>
+            <tr>
+                <th>Total Queues</th>
+                <td>{{ $totalQueues }}</td>
+            </tr>
+            <tr>
+                <th>Completed Consultations</th>
+                <td>{{ $completedQueues }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- SECTION 3 -->
+    <div class="section">
+        <div class="section-title">3. Consultation Room Activity</div>
+        <table>
+            <tr>
+                <th>Consultation Room</th>
+                <th>Doctor Name</th>
+                <th>Completed Consultations</th>
+            </tr>
+            @foreach ($roomActivities as $room)
+                <tr>
+                    <td>{{ $room->name ?? ('Room #' . $room->id) }}</td>
+                    <td>{{ $room->doctor_name ?? '-' }}</td>
+                    <td>{{ $room->completed_count }}</td>
+                </tr>
+            @endforeach
+        </table>
+    </div>
+
+    <!-- SECTION 4 -->
+    <div class="section">
+        <div class="section-title">4. Queue Cancellation Analysis</div>
+        <table>
+            <tr>
+                <th>Manual Cancellation</th>
+                <td>{{ $manualCancelled }}</td>
+            </tr>
+            <tr>
+                <th>Auto Cancellation (Geofence)</th>
+                <td>{{ $autoCancelled }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        This report is system-generated by the <strong>MediQTrack</strong> platform for
+        administrative monitoring and operational analysis purposes. <br>
+        No physical signature is required for this document.
+    </div>
+
+</body>
+</html>

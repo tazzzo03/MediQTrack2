@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\PatientController;
-use App\Http\Controllers\QueueController;
+use App\Http\Controllers\Clinic\PatientController;
+use App\Http\Controllers\Clinic\QueueController;
 use App\Http\Controllers\ClinicController;
 use App\Http\Controllers\Clinic\QueueController as ClinicQueueController;
 use App\Http\Controllers\KKMVerifierController;
@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Patient;
 use App\Http\Controllers\TelegramController;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\ClinicAuthController;
+use App\Models\Queue;
+use App\Http\Controllers\Clinic\ClinicDashboardController;
+use App\Http\Controllers\Clinic\RoomController;
+use App\Http\Controllers\Admin\ReportController;
+
 /*
 |--------------------------------------------------------------------------
 | System-wide Routes
@@ -82,8 +89,8 @@ Route::prefix('patient')->name('patient.')->group(function () {
     Route::post('/login', [PatientController::class, 'login']);
     Route::post('/logout', [PatientController::class, 'logout'])->name('logout');
 
-    Route::get('/register', [PatientController::class, 'showRegisterForm'])->name('register.form');
-    Route::post('/register', [PatientController::class, 'register'])->name('register');
+    //Route::get('/register', [PatientController::class, 'showRegisterForm'])->name('register.form');
+    //Route::post('/register', [PatientController::class, 'register'])->name('register');
 
     // OTP Verification
     Route::get('/verify-otp/{id}', [PatientController::class, 'showOtpForm'])->name('otp.form');
@@ -167,4 +174,98 @@ Route::get('/test-telegram', function () {
     ]);
 
     return 'Test message sent!';
+});
+
+//ROUTE UNTUK DOCTOR 
+Route::middleware(['auth:clinic'])->group(function () {
+    Route::get('/doctor/dashboard', [DoctorController::class, 'index'])->name('doctor.dashboard');
+    Route::post('/doctor/start/{id}', [DoctorController::class, 'startConsultation'])->name('doctor.start');
+    Route::post('/doctor/complete/{id}', [DoctorController::class, 'completeConsultation'])->name('doctor.complete');
+});
+
+// Papar borang daftar
+Route::get('/clinic/register', [ClinicAuthController::class, 'showRegisterForm'])
+    ->name('clinic.showRegister');
+
+// Proses borang daftar
+Route::post('/clinic/register', [ClinicAuthController::class, 'register'])
+    ->name('clinic.register');
+
+
+Route::get('/clinic/login', [ClinicAuthController::class, 'showLoginForm'])->name('clinic.login');
+Route::post('/clinic/login', [ClinicAuthController::class, 'login']);
+
+Route::get('/clinic/logout', [ClinicAuthController::class, 'logout'])->name('clinic.logout');
+
+// selepas login, nanti kita buat dashboard:
+Route::get('/clinic/dashboard', function () {
+    // Ambil semua queue dari database
+    $queues = Queue::with('patient')->latest()->get();
+
+    return view('clinic.dashboard', compact('queues'));
+})->name('clinic.dashboard');
+
+// Doctor call next patient
+Route::post('/clinic/queue/call-next', [ClinicController::class, 'callNextPatient'])
+    ->name('clinic.queue.callNext');
+
+    Route::prefix('clinic')->group(function () {
+    Route::get('/dashboard', [ClinicDashboardController::class, 'index'])->name('clinic.dashboard');
+});
+
+Route::prefix('clinic')->group(function () {
+    Route::get('/rooms', [RoomController::class, 'index'])->name('clinic.rooms.index');
+    Route::post('/rooms', [RoomController::class, 'store'])->name('clinic.rooms.store');
+    Route::patch('/rooms/{id}/toggle', [RoomController::class, 'toggleStatus'])->name('clinic.rooms.toggle');
+});
+
+Route::patch('/rooms/{id}', [RoomController::class, 'update'])->name('clinic.rooms.update');
+Route::delete('/rooms/{id}', [RoomController::class, 'destroy'])->name('clinic.rooms.destroy');
+
+Route::prefix('clinic')->name('clinic.')->group(function () {
+    // page lain (dashboard, rooms dsb)
+    
+    Route::get('/clinic/queue', [QueueController::class, 'index'])->name('queue.index');
+    Route::patch('/clinic/queue/{id}', [QueueController::class, 'update'])->name('queue.update');
+    Route::delete('/clinic/queue/{id}', [QueueController::class, 'destroy'])->name('queue.destroy');
+});
+
+Route::patch('/clinic/queue/{id}/call', [QueueController::class, 'callPatient'])->name('clinic.queue.callPatient');
+Route::patch('/clinic/queue/{id}/done', [QueueController::class, 'markDone'])->name('clinic.queue.markDone');
+Route::patch('/clinic/queue/now-serving/{room_id}', [QueueController::class, 'nowServing'])
+->name('clinic.queue.nowServing');
+
+Route::get('/clinic/queue/now-serving/{room_id}', [QueueController::class, 'nowServing'])
+    ->name('clinic.queue.nowServing');
+
+Route::patch('/clinic/queue/{id}/complete', [QueueController::class, 'completeConsultation'])
+    ->name('clinic.queue.completeConsultation');
+
+Route::patch('/clinic/queue/next/{room_id}', [QueueController::class, 'nextPatient']);
+
+Route::get('/clinic/queue/history', [QueueController::class, 'history'])
+    ->name('clinic.queue.history');
+
+Route::prefix('clinic')->name('clinic.')->group(function () {
+    // Patient Management
+    Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
+    Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
+    Route::patch('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
+    Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
+    Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show'); // optional view details
+});
+
+Route::get('/logtest', function () {
+    Log::info('🧩 Laravel manual log test');
+    return 'Log test triggered!';
+});
+
+Route::get('/clinic/queue/reset-now-serving', [QueueController::class, 'resetNowServing'])->name('queue.resetNowServing');
+
+Route::get('/clinic/dashboard', [ClinicDashboardController::class, 'index'])
+     ->name('clinic.dashboard');
+
+Route::prefix('clinic')->middleware('auth:clinic')->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])->name('clinic.reports.index');
+    Route::get('/reports/export', [ReportController::class, 'exportPdf'])->name('clinic.reports.export');
 });

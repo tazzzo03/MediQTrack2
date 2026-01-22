@@ -13,15 +13,15 @@ class Clinic extends Authenticatable
 
     protected $fillable = [
         'clinic_name',
+        'room_id',
+        'name',
+        'role',
         'email',
-        'latitude',
-        'longitude',
-        'radius',
         'password',
-        'is_approved',
         'phone',
-        'license_no',
-        'license_file',
+        'address',
+        'latitude',
+        'longitude'
     ];
 
     protected $hidden = [

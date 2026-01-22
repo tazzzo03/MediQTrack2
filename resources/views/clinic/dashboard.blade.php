@@ -1,118 +1,225 @@
-@extends('layouts.clinic')
+﻿@extends('layouts.clinic')
+
+@section('title', 'Dashboard')
 
 @section('content')
-<div class="container mt-5">
-    {{-- Welcome + Summary Card --}}
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Welcome, {{ Auth::guard('clinic')->user()->clinic_name }}</h5>
-        </div>
-        <div class="card-body bg-light">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="alert alert-info">
-                        <strong>Total Queues:</strong> {{ $queues->count() }}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="alert alert-warning">
-                        <strong>Active Consultation:</strong> {{ $queues->where('phase', 'consultation')->count() }}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="alert alert-success">
-                        <strong>Completed Today:</strong> {{ $queues->where('phase', 'completed')->count() }}
-                    </div>
-                </div>
+<div class="container-fluid">
+
+  <h3 class="fw-bold text-primary mb-4">Clinic Dashboard</h3>
+
+  <!-- Stats Section -->
+  <div class="row g-4 mb-4">
+
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 h-100 stat-card">
+          <div class="d-flex align-items-center">
+            <div class="icon-box me-3" style="background-color:#1565C0;">
+              <i class="fa-solid fa-layer-group"></i>
             </div>
+            <div>
+              <h6 class="text-muted mb-1">Total Queues</h6>
+              <h3 class="fw-bold mb-0" style="color:#1565C0;">{{ $totalQueues }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 h-100 stat-card">
+          <div class="d-flex align-items-center">
+            <div class="icon-box me-3" style="background-color:#00BFA5;">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Active Queues</h6>
+              <h3 class="fw-bold mb-0" style="color:#00BFA5;">{{ $activeQueues }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 h-100 stat-card">
+          <div class="d-flex align-items-center">
+            <div class="icon-box me-3" style="background-color:#F9A825;">
+              <i class="fa-solid fa-check-circle"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Completed Today</h6>
+              <h3 class="fw-bold mb-0" style="color:#F9A825;">{{ $completedToday }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 h-100 stat-card">
+          <div class="d-flex align-items-center">
+            <div class="icon-box me-3" style="background-color:#8E24AA;">
+              <i class="fa-solid fa-door-open"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Active Rooms</h6>
+              <h3 class="fw-bold mb-0" style="color:#8E24AA;">{{ $activeRooms }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  </div>
+
+  <!-- Info Section -->
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-3 h-100">
+        <h6 class="fw-semibold text-primary mb-3">
+          <i class="fa-solid fa-user-md me-2"></i> Doctor on Duty
+        </h6>
+
+        <table class="table align-middle">
+          <tbody>
+          @foreach($doctors as $d)
+              <tr>
+                  <td>{{ $d->doctor_name }} ({{ $d->name }})</td>
+
+                  <td class="text-end">
+                      @if($d->status === 'on')
+                          <span class="badge bg-success px-3 py-2">Active</span>
+                      @else
+                          <span class="badge bg-secondary px-3 py-2">Off</span>
+                      @endif
+                  </td>
+              </tr>
+          @endforeach
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm p-3 h-100">
+        <h6 class="fw-semibold text-danger mb-3">
+          <i class="fa-solid fa-ban me-2"></i> Cancellation Summary
+        </h6>
+
+        <p class="mb-1"><strong>Total Cancelled Today:</strong> {{ $totalCancelledToday }}</p>
+
+        <p class="mb-1">
+          User Cancelled:
+          <strong class="text-primary">{{ $userCancelledToday }}</strong>
+        </p>
+
+        <p class="mb-1">
+          Auto Cancel (Timeout / Left Geofence):
+          <strong class="text-warning">{{ $autoCancelledToday }}</strong>
+        </p>
+
+        <hr>
+
+        <p class="text-muted mb-0" style="font-size: 14px;">Status tracked from queue updates</p>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-4">
+
+    {{-- Queue Activity Chart --}}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm p-4">
+            <h6 class="fw-semibold text-primary mb-3">
+                <i class="fa-solid fa-chart-line me-2"></i> Queue Activity Today (Hourly)
+            </h6>
+
+            <canvas id="queueChart"
+                data-hours='@json($hours)'
+                data-totals='@json($totals)'
+                height="120">
+            </canvas>
+        </div>
+    </div>
+ 
+    <div class="row g-4 mt-4">
+
+    <!-- RIGHT SIDE (Pie Chart BIG CARD) -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm p-3">
+            <h6 class="fw-semibold text-primary mb-3">
+                <i class="fa-solid fa-user-nurse me-2"></i> Doctor Performance
+            </h6>
+
+            <canvas id="doctorChart" height="140" style="max-width: 420px; margin: 0 auto; display: block;"></canvas>
         </div>
     </div>
 
-    {{-- Auto-Assign Button + Flash Messages --}}
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
-    <form method="POST" action="{{ route('clinic.autoAssignAll') }}" class="mb-3">
-        @csrf
-        <button class="btn btn-primary">
-            Assign Patients
-        </button>
-    </form>
-
-    {{-- Queue Management Table --}}
-    <div class="card shadow">
-        <div class="card-header bg-dark text-white">
-            <h6 class="mb-0">Queue Management</h6>
-        </div>
-        <div class="card-body">
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>#</th>
-                        <th>Patient Name</th>
-                        <th>Phase</th>
-                        <th>Status</th>
-                        <th>Counter</th>
-                        <th>Joined At</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($queues as $index => $queue)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $queue->patient->name }}</td>
-                            <td>{{ ucfirst($queue->phase) }}</td>
-                            <td>
-                                @if ($queue->status === 'cancelled')
-                                    <span class="badge bg-danger">Cancelled</span>
-                                @elseif ($queue->phase === 'consultation')
-                                    <span class="badge bg-warning text-dark">In Consultation</span>
-                                @elseif ($queue->phase === 'pharmacy')
-                                    <span class="badge bg-info text-dark">At Pharmacy</span>
-                                @elseif ($queue->phase === 'completed')
-                                    <span class="badge bg-success">Completed</span>
-                                @else
-                                    <span class="badge bg-secondary">Waiting</span>
-                                @endif
-                            </td>
-                            <td>
-                                {{ $queue->counter_number ?? '-' }}
-                            </td>
-                            <td>{{ $queue->created_at->format('d M Y, h:i A') }}</td>
-                           <td>
-    @if ($queue->status === 'cancelled')
-        <span class="text-muted">-</span>
-    @elseif ($queue->phase === 'consultation')
-        <form method="POST" action="{{ route('clinic.queue.update', $queue->queue_id) }}">
-    <input type="hidden" name="next_phase" value="pharmacy">
-
-            @csrf
-            <button class="btn btn-sm btn-warning">To Pharmacy</button>
-        </form>
-    @elseif ($queue->phase === 'pharmacy')
-        <form method="POST" action="{{ route('clinic.queue.done', $queue->queue_id) }}">
-            @csrf
-            <button class="btn btn-sm btn-success">Mark as Done</button>
-        </form>
-    @else
-        <span class="text-muted">-</span>
-    @endif
-</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted">No queues yet.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
 </div>
+
+    
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const chartEl = document.getElementById('queueChart');
+
+    const hours = JSON.parse(chartEl.dataset.hours);
+    const totals = JSON.parse(chartEl.dataset.totals);
+
+    const ctx = chartEl.getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: hours,
+            datasets: [{
+                label: 'Number of Patients',
+                data: totals,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+</script>
+
+<script>
+    // Doctor Performance Chart Data
+    const doctorChart = document.getElementById('doctorChart').getContext('2d');
+
+    new Chart(doctorChart, {
+        type: 'pie',
+        data: {
+            labels: @json($doctorNames),
+            datasets: [{
+                data: @json($doctorTotals),
+                backgroundColor: [
+                    '#1565C0',
+                    '#00BFA5',
+                    '#F9A825',
+                    '#8E24AA',
+                    '#EF5350',
+                    '#5C6BC0',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+
 @endsection

@@ -23,7 +23,7 @@ class TelegramController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        $response = "❓ Unknown command. Please use /status or /cancel.";
+        $response = "Unknown command. Please use /status or /cancel.";
 
         // Handle /start (with optional parameter)
         if (strpos($message, '/start') === 0) {
@@ -41,12 +41,12 @@ class TelegramController extends Controller
                     }
 
                     $name = strtoupper($patient->name);
-                    $response = "Hi $name! 🎉 Thank you for using MediQTrack. Your account is now linked to Telegram. We'll notify you when your queue updates.";
+                    $response = "Hi $name!  Thank you for using MediQTrack. Your account is now linked to Telegram. We'll notify you when your queue updates.";
                 } else {
-                    $response = "⚠️ Invalid patient ID.";
+                    $response = " Invalid patient ID.";
                 }
             } else {
-                $response = "👋 Hi there! Please open this link from your MediQTrack account.";
+                $response = "Hi there! Please open this link from your MediQTrack account.";
             }
         }
 
@@ -58,7 +58,7 @@ class TelegramController extends Controller
     Log::info('Patient data for /status:', [$patient]);
 
     if (!$patient) {
-        $response = "❌ Your Telegram is not linked to any patient account.";
+        $response = " Your Telegram is not linked to any patient account.";
     } else {
         $queue = Queue::where('patient_id', $patient->id)
             ->latest()
@@ -66,7 +66,7 @@ class TelegramController extends Controller
         Log::info('Queue data for /status:', [$queue]);
 
         if (!$queue) {
-            $response = "ℹ️ You are not currently in any queue.";
+            $response = " You are not currently in any queue.";
         } else {
             $clinic = optional($queue->clinic)->clinic_name ?? 'Unknown Clinic';
             $myNumber = $queue->queue_number;
@@ -79,18 +79,18 @@ class TelegramController extends Controller
                     ->whereIn('status', ['pending', 'in_progress', 'waiting'])
                     ->count();
 
-                $response = "📋 *Queue Status*\n"
-                    . "🏥 Clinic: $clinic\n"
-                    . "🔢 Your Number: $myNumber\n"
-                    . "👥 People Ahead: $aheadCount\n"
-                    . "⏳ Status: $status\n"
-                    . "📍 Current Phase: $phase";
+                $response = "*Queue Status*\n"
+                    . "Clinic: $clinic\n"
+                    . "Your Number: $myNumber\n"
+                    . "People Ahead: $aheadCount\n"
+                    . "Status: $status\n"
+                    . "Current Phase: $phase";
             } else {
-                $response = "✅ Your last queue:\n"
-                    . "🏥 Clinic: $clinic\n"
-                    . "🔢 Queue Number: $myNumber\n"
-                    . "✅ Status: $status\n"
-                    . "📍 Phase (when completed): $phase";
+                $response = "Your last queue:\n"
+                    . "Clinic: $clinic\n"
+                    . "Queue Number: $myNumber\n"
+                    . "Status: $status\n"
+                    . "Phase (when completed): $phase";
             }
         }
     }
@@ -102,7 +102,7 @@ class TelegramController extends Controller
             Log::info('Patient data for /cancel:', [$patient]);
 
             if (!$patient) {
-                $response = "❌ You are not registered in our system.";
+                $response = " You are not registered in our system.";
             } else {
                 $queue = Queue::where('patient_id', $patient->id)
                     ->whereIn('status', ['pending', 'in_progress'])
@@ -112,13 +112,13 @@ class TelegramController extends Controller
                 Log::info('Queue to cancel:', [$queue]);
 
                 if (!$queue) {
-                    $response = "⚠️ You are not currently in any active queue.";
+                    $response = " You are not currently in any active queue.";
                 } else {
                     $queue->status = 'cancelled';
                     $queue->phase = 'completed';
                     $queue->save();
 
-                    $response = "✅ Your queue (Number: {$queue->queue_number}) has been cancelled.";
+                    $response = " Your queue (Number: {$queue->queue_number}) has been cancelled.";
                 }
             }
         }

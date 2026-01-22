@@ -37,5 +37,17 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'firebase' => [
+        'credentials' => [
+            'file' => env('FIREBASE_CREDENTIALS'),
+        ],
+    ],
+
+    'geofence_radius_m' => env('GEOFENCE_RADIUS_METERS', 150),
+
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'key' => env('SUPABASE_SERVICE_KEY'),
+    ],
 
 ];

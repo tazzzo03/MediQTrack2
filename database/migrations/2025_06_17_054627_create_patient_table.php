@@ -27,6 +27,7 @@ return new class extends Migration
             $table->boolean('is_verified')->default(false);
             $table->rememberToken();
             $table->timestamps();
+            $table->string('fcm_token')->nullable();
 
             });
     }

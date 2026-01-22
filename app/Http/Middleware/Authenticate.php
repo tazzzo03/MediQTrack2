@@ -17,6 +17,10 @@ class Authenticate extends Middleware
             return route('admin.login');
         }
 
+        if ($request->is('clinic') || $request->is('clinic/*')) {
+            return route('clinic.login');
+        }
+
         return route('patient.login'); // your patient login route
     }
 

@@ -11,11 +11,6 @@
                 <i class="bi bi-people"></i> Manage Users
             </a>
         </li>
-        <li class="nav-item mb-2">
-            <a href="#" class="nav-link text-white">
-                <i class="bi bi-bar-chart"></i> Reports
-            </a>
-        </li>
         <li class="nav-item mt-4">
             <form method="POST" action="{{ route('admin.logout') }}">
                 @csrf

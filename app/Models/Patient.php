@@ -25,6 +25,8 @@ class Patient extends Authenticatable implements MustVerifyEmail
         'otp_expires_at',
         'is_verified',
         'google_id',
+        'firebase_uid',
+        'fcm_token',
     ];
 
     protected $hidden = [
@@ -39,6 +41,11 @@ class Patient extends Authenticatable implements MustVerifyEmail
 public function queues()
 {
     return $this->hasMany(Queue::class, 'patient_id', 'id');
+}
+
+public function notifications()
+{
+    return $this->hasMany(Notification::class, 'patient_id');
 }
 
 
