@@ -14,7 +14,7 @@ use Google\Cloud\Firestore\FirestoreClient;
 use App\Http\Controllers\Api\FCMController;
 use App\Services\SupabaseService;
 use Carbon\Carbon;
-
+use App\Jobs\DeleteQueueFromFirestore;
 
 class QueueController extends Controller
 {
@@ -208,8 +208,12 @@ class QueueController extends Controller
             $queue->save();
 
             // ' Delete dari Firestore (supaya real-time queue kosong)
-            $firestore = new \App\Services\FirestoreService();
-            $firestore->deleteQueueRecordByUid($queue->patient->firebase_uid);
+            //$firestore = new \App\Services\FirestoreService();
+            //$firestore->deleteQueueRecordByUid($queue->patient->firebase_uid);
+
+           if (!empty($queue->patient->firebase_uid)) {
+    DeleteQueueFromFirestore::dispatch($queue->patient->firebase_uid);
+}
 
             return back()->with('success', 'Medication process completed.');
         }

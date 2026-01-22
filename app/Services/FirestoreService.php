@@ -13,7 +13,8 @@ class FirestoreService
     {
         $this->firestore = new FirestoreClient([
             'projectId' => env('FIREBASE_PROJECT_ID'),
-            'keyFilePath' => base_path(env('FIREBASE_CREDENTIALS')),
+            'keyFilePath' => env('FIREBASE_CREDENTIALS'),
+            'transport' => 'rest',
         ]);
     }
 
