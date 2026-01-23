@@ -69,6 +69,8 @@ class QueueController extends Controller
 
         if ($statusFilter === 'completed') {
             $query->where('status', 'completed');
+        } elseif ($statusFilter === 'auto_cancelled') {
+            $query->where('status', 'auto_cancelled');
         } elseif ($statusFilter === 'cancelled') {
             $query->whereIn('status', $cancelStatuses);
         }

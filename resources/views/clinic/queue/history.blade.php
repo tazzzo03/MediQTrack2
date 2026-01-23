@@ -55,9 +55,9 @@
             <th>Queue Number</th>
             <th>Patient Name</th>
             <th>Room</th>
-            <th>Status</th>
+            <th class="text-center">Status</th>
             <th>Date</th>
-            <th>Time Completed</th>
+            <th class="text-center">Time Completed</th>
           </tr>
         </thead>
         <tbody>
@@ -85,11 +85,18 @@
             <tr>
               <td>{{ $index + 1 }}</td>
               <td>{{ $queue->queue_number }}</td>
-              <td>{{ $queue->patient->name ?? 'Unknown' }}</td>
+              @php
+                $fullName = $queue->patient->name ?? 'Unknown';
+                $nameParts = preg_split('/\s+/', trim($fullName));
+                $shortName = count($nameParts) > 1
+                  ? ($nameParts[0] . ' ' . $nameParts[1])
+                  : $fullName;
+              @endphp
+              <td>{{ $shortName }}</td>
               <td>{{ $queue->room->name ?? '-' }}</td>
-              <td><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></td>
+              <td class="text-center"><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></td>
               <td>{{ $dateValue }}</td>
-              <td>{{ $timeLabel }}</td>
+              <td class="text-center">{{ $timeLabel }}</td>
             </tr>
           @empty
             <tr>
