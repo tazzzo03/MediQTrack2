@@ -104,7 +104,7 @@ class ClinicDashboardController extends Controller
             ->whereDate('updated_at', today())
             ->count();
 
-        $autoCancelledToday = Queue::whereIn('status', ['timeout', 'left_geofence'])
+        $autoCancelledToday = Queue::whereIn('status', ['auto_cancelled', 'timeout', 'left_geofence'])
             ->whereDate('updated_at', today())
             ->count();
 
