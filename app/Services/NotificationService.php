@@ -45,9 +45,24 @@ if (!$silent) {
     } catch (\Throwable $e) {
         Log::error('Firestore sync failed: ' . $e->getMessage());
     }
-}
+        }
         //  3. Push noti ke device user via FCM V1
         $patient = Patient::find($patientId);
+        if (!$patient) {
+            Log::warning('FCM skipped: patient not found', ['patient_id' => $patientId]);
+            return $notification;
+        }
+
+        if (!$patient->fcm_token) {
+            Log::warning('FCM skipped: missing token', ['patient_id' => $patientId]);
+            return $notification;
+        }
+
+        Log::info('FCM sending', [
+            'patient_id' => $patientId,
+            'token_tail' => substr($patient->fcm_token, -8),
+        ]);
+
         if ($patient && $patient->fcm_token) {
             $this->sendFcmV1($patient->fcm_token, $title, $body);
         }
@@ -103,7 +118,7 @@ if (!$silent) {
             $response = \Illuminate\Support\Facades\Http::withToken($accessToken)
                 ->post($url, $payload);
 
-            Log::info(' FCM V1 sent', [
+            Log::info('FCM V1 response', [
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
