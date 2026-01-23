@@ -371,12 +371,15 @@ class QueueController extends Controller
             ],
         ];
 
-        $updateMask = ["counters.$roomKey"];
+        $roomKeyPath = ctype_digit($roomKey) ? "`{$roomKey}`" : $roomKey;
+        $updateMask = ["counters.$roomKeyPath"];
 
         $firestore = new FirestoreRestService();
-        $firestore->patchDocument($docPath, $fields, $updateMask);
+        $ok = $firestore->patchDocument($docPath, $fields, $updateMask);
 
-        Log::info('Firestore updated successfully for now serving: ' . $next->queue_number);
+        if ($ok) {
+            Log::info('Firestore updated successfully for now serving: ' . $next->queue_number);
+        }
 
     } catch (\Throwable $e) {
         Log::error('Firestore sync failed', [
@@ -557,9 +560,10 @@ class QueueController extends Controller
                 ],
             ];
 
+            $roomKeyPath = ctype_digit($roomKey) ? "`{$roomKey}`" : $roomKey;
             $updateMask = [
-                "counters.$roomKey.label",
-                "counters.$roomKey.updatedAt",
+                "counters.$roomKeyPath.label",
+                "counters.$roomKeyPath.updatedAt",
             ];
 
             $firestore = new FirestoreRestService();
