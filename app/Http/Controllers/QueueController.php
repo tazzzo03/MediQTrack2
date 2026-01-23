@@ -100,7 +100,7 @@ class QueueController extends Controller
 
         return response()->json([
             'success' => true,
-            'queue_id' => $queue->id, 
+            'queue_id' => $queue->queue_id,
             'queue_number' => $queue->queue_number,
             'status' => $queue->status,
             'room_id' => $queue->room_id, // kalau ada
@@ -178,7 +178,7 @@ class QueueController extends Controller
             // Return data queue semasa
             return response()->json([
                 'success' => true,
-                'queue_id' => $queue->id,
+                'queue_id' => $queue->queue_id,
                 'queue_number' => $queue->queue_number,
                 'status' => $queue->status,
                 'room_id' => $queue->room_id,
@@ -382,7 +382,7 @@ class QueueController extends Controller
             'distance' => $request->input('distance'),
             'inside_geofence' => $request->boolean('inside_geofence'),
             'countdown_ended' => (bool) DB::table('queue_countdowns')
-                ->where('queue_id', $queue->id)
+                ->where('queue_id', $queue->queue_id)
                 ->where('is_active', false)
                 ->value('end_time'),
         ];
