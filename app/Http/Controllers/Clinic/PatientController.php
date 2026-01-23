@@ -10,6 +10,7 @@ use App\Models\Patient; // pastikan model betul
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\AuthException;
 use Kreait\Firebase\Exception\FirebaseException;
@@ -49,6 +50,34 @@ class PatientController extends Controller
 
     public function destroy(Patient $patient)
     {
+        if (!empty($patient->firebase_uid)) {
+            try {
+                $serviceAccount = config('firebase.file');
+                if (is_string($serviceAccount) && file_exists($serviceAccount)) {
+                    $auth = (new Factory)->withServiceAccount($serviceAccount)->createAuth();
+                    $auth->deleteUser($patient->firebase_uid);
+                } else {
+                    Log::warning('Firebase delete skipped: missing service account file', [
+                        'patient_id' => $patient->id,
+                        'firebase_uid' => $patient->firebase_uid,
+                        'path' => $serviceAccount,
+                    ]);
+                }
+            } catch (AuthException | FirebaseException $e) {
+                Log::warning('Firebase delete failed', [
+                    'patient_id' => $patient->id,
+                    'firebase_uid' => $patient->firebase_uid,
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Firebase delete failed (unexpected)', [
+                    'patient_id' => $patient->id,
+                    'firebase_uid' => $patient->firebase_uid,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $patient->delete(); // hard delete
         return redirect()->route('clinic.patients.index')->with('success', 'Patient deleted successfully.');
     }
