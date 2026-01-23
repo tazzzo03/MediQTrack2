@@ -57,7 +57,14 @@
                     <tr>
                       <td>{{ $index + 1 }}</td>
                       <td>{{ $queue->queue_number }}</td>
-                      <td>{{ $queue->patient->name ?? 'Unknown' }}</td>
+                      @php
+                        $fullName = $queue->patient->name ?? 'Unknown';
+                        $nameParts = preg_split('/\s+/', trim($fullName));
+                        $shortName = count($nameParts) > 1
+                          ? ($nameParts[0] . ' ' . $nameParts[1])
+                          : $fullName;
+                      @endphp
+                      <td>{{ $shortName }}</td>
                       <td>{{ $queue->room->name ?? '-' }}</td>
                       <td>
                         @if($queue->status == 'waiting')
@@ -186,7 +193,14 @@
                     <tr>
                       <td>{{ $index + 1 }}</td>
                       <td>{{ $queue->queue_number }}</td>
-                      <td>{{ $queue->patient->name ?? 'Unknown' }}</td>
+                      @php
+                        $fullName = $queue->patient->name ?? 'Unknown';
+                        $nameParts = preg_split('/\s+/', trim($fullName));
+                        $shortName = count($nameParts) > 1
+                          ? ($nameParts[0] . ' ' . $nameParts[1])
+                          : $fullName;
+                      @endphp
+                      <td>{{ $shortName }}</td>
                       <td>{{ $queue->room->name ?? '-' }}</td>
                       <td><span class="badge bg-primary">Completed</span></td>
                     </tr>

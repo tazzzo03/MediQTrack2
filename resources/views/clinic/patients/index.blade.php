@@ -35,7 +35,14 @@
           @forelse($patients as $index => $patient)
             <tr>
               <td class="fw-semibold">{{ $index + 1 }}</td>
-              <td class="fw-semibold">{{ $patient->name }}</td>
+              @php
+                $fullName = $patient->name ?? 'Unknown';
+                $nameParts = preg_split('/\s+/', trim($fullName));
+                $shortName = count($nameParts) > 1
+                  ? ($nameParts[0] . ' ' . $nameParts[1])
+                  : $fullName;
+              @endphp
+              <td class="fw-semibold">{{ $shortName }}</td>
               <td>{{ $patient->email ?? '-' }}</td>
               <td>{{ $patient->phone_number ?? '-' }}</td>
               <td class="text-center">
@@ -78,7 +85,14 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body">
-                    <p><strong>Name:</strong> {{ $patient->name }}</p>
+                    @php
+                      $fullName = $patient->name ?? 'Unknown';
+                      $nameParts = preg_split('/\s+/', trim($fullName));
+                      $shortName = count($nameParts) > 1
+                        ? ($nameParts[0] . ' ' . $nameParts[1])
+                        : $fullName;
+                    @endphp
+                    <p><strong>Name:</strong> {{ $shortName }}</p>
                     <p><strong>Email:</strong> {{ $patient->email ?? '-' }}</p>
                     <p><strong>Phone:</strong> {{ $patient->phone_number ?? '-' }}</p>
                     <p><strong>IC Number:</strong> {{ $patient->ic_number ?? '-' }}</p>
