@@ -354,8 +354,24 @@ class QueueController extends Controller
 
     // Sync ke Firestore
     try {
-        $factory = (new Factory)->withServiceAccount(config('firebase.file'));
-        $firestore = $factory->createFirestore()->database();
+        $projectId = env('FIREBASE_PROJECT_ID');
+        $keyPath = config('firebase.file');
+
+        if (!is_string($keyPath) || !file_exists($keyPath)) {
+            Log::error('Firestore key file missing for now serving update', [
+                'keyPath' => $keyPath,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Firestore credentials file not found.',
+            ]);
+        }
+
+        $firestore = new FirestoreClient([
+            'projectId' => $projectId,
+            'keyFilePath' => $keyPath,
+            'transport' => 'rest',
+        ]);
 
         $clinicId = $next->clinic_id ?? 1;
 
