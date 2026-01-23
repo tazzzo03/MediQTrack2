@@ -340,7 +340,7 @@ class QueueController extends Controller
     if ($logId) {
         $next->supabase_log_id = $logId;
     }
-    $this->syncQueueToFirestore($next);
+
     $next->save();
 
     // '" Hantar notifikasi kepada patient yang dipanggil
@@ -354,7 +354,7 @@ class QueueController extends Controller
 
     // Sync ke Firestore
     try {
-        $factory = (new Factory)->withServiceAccount(config('firebase.credentials.file'));
+        $factory = (new Factory)->withServiceAccount(config('firebase.file'));
         $firestore = $factory->createFirestore()->database();
 
         $clinicId = $next->clinic_id ?? 1;

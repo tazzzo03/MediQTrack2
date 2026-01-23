@@ -92,7 +92,7 @@ class FCMController extends Controller
     {
         // Delegate to NotificationService so it also saves to MySQL and Firestore
         try {
-            (new \App\Services\NotificationService())->sendToPatient($patientId, $title, $body, 'info');
+            (new \App\Services\NotificationService())->sendToPatient($patientId, $title, $body);
             return true;
         } catch (\Throwable $e) {
             Log::error('FCM sendToPatient failed', [

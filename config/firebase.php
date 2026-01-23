@@ -12,9 +12,9 @@ return [
     |
     */
 
-    'credentials' => [
-        'file' => base_path(env('FIREBASE_CREDENTIALS', 'storage/app/firebase/service-account.json')),
-    ],
+    
+    'file' => storage_path('app/firebase/service-account.json'),
+
     'project_id' => env('FIREBASE_PROJECT_ID'),
 
 ];
