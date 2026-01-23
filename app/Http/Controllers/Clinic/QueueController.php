@@ -382,7 +382,10 @@ class QueueController extends Controller
         Log::info('Firestore updated successfully for now serving: ' . $next->queue_number);
 
     } catch (\Throwable $e) {
-        Log::error('Firestore sync failed: ' . $e->getMessage());
+        Log::error('Firestore sync failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
@@ -696,4 +699,3 @@ public function countdownEnded(Request $request)
     }
 
 }
-
