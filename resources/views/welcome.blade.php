@@ -189,7 +189,7 @@
             <span>MediQTrack</span>
         </a>
         <div class="d-none d-md-flex gap-3">
-            <a href="{{ route('patient.login') }}" class="btn btn-sm btn-outline-primary">Download Apps</a>
+            <a href="https://drive.google.com/file/d/1nkE1jOzN60AwMsP14lwxxQnsh8dAY5wM/view?usp=sharing" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener noreferrer">Download Apps</a>
             <a href="{{ route('clinic.login') }}" class="btn btn-sm btn-primary">Clinic Login</a>
         </div>
     </div>
@@ -204,7 +204,7 @@
                     so clinics stay efficient and patients stay informed.
                 </p>
                 <div class="hero-actions mt-4 d-flex flex-wrap gap-3">
-                    <a href="{{ route('patient.login') }}" class="btn btn-light">Download Apps</a>
+                    <a href="https://drive.google.com/file/d/1nkE1jOzN60AwMsP14lwxxQnsh8dAY5wM/view?usp=sharing" class="btn btn-light" target="_blank" rel="noopener noreferrer">Download Apps</a>
                 </div>
             </div>
         </div>
@@ -316,7 +316,7 @@
                 </p>
             </div>
             <div class="d-flex gap-3">
-                <a href="{{ route('clinic.login') }}" class="btn btn-light fw-semibold">Download Apps</a>
+                <a href="https://drive.google.com/file/d/1nkE1jOzN60AwMsP14lwxxQnsh8dAY5wM/view?usp=sharing" class="btn btn-light fw-semibold" target="_blank" rel="noopener noreferrer">Download Apps</a>
             </div>
         </div>
     </div>
