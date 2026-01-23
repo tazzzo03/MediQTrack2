@@ -563,12 +563,20 @@ class QueueController extends Controller
         }
 
         try {
-            $projectId = getenv('FIREBASE_PROJECT_ID') ?: env('FIREBASE_PROJECT_ID');
-            $keyPath   = base_path(getenv('FIREBASE_CREDENTIALS') ?: env('FIREBASE_CREDENTIALS'));
+            $projectId = env('FIREBASE_PROJECT_ID');
+            $keyPath = config('firebase.file');
+
+            if (!is_string($keyPath) || !file_exists($keyPath)) {
+                Log::error('clearNowServing failed: Firestore key file missing', [
+                    'keyPath' => $keyPath,
+                ]);
+                return;
+            }
 
             $firestore = new \Google\Cloud\Firestore\FirestoreClient([
                 'keyFilePath' => $keyPath,
-                'projectId'   => $projectId,
+                'projectId' => $projectId,
+                'transport' => 'rest',
             ]);
 
             $docRef = $firestore->collection('clinics')
@@ -595,9 +603,8 @@ class QueueController extends Controller
                 return;
             }
 
-            // Baca file .env secara terus untuk bypass cache
-            $projectId = getenv('FIREBASE_PROJECT_ID') ?: env('FIREBASE_PROJECT_ID');
-            $keyPath   = base_path(getenv('FIREBASE_CREDENTIALS') ?: env('FIREBASE_CREDENTIALS'));
+            $projectId = env('FIREBASE_PROJECT_ID');
+            $keyPath = config('firebase.file');
 
             Log::info('Firestore config check', [
                 'projectId' => $projectId,
@@ -605,10 +612,18 @@ class QueueController extends Controller
                 'exists'    => file_exists($keyPath),
             ]);
 
+            if (!is_string($keyPath) || !file_exists($keyPath)) {
+                Log::error('Firestore sync failed: missing credentials file', [
+                    'keyPath' => $keyPath,
+                ]);
+                return;
+            }
+
             // ' Init Firestore
             $firestore = new \Google\Cloud\Firestore\FirestoreClient([
                 'keyFilePath' => $keyPath,
                 'projectId'   => $projectId,
+                'transport'   => 'rest',
             ]);
 
             $firestore->collection('queues')
