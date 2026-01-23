@@ -10,35 +10,42 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
-    public function sendToPatient($patientId, $title, $body, $type = 'info')
+    public function sendToPatient($patientId, $title, $body, $type = 'info',bool $silent = false)
     {
         //  1. Simpan ke MySQL
-        $notification = Notification::create([
-            'patient_id' => $patientId,
-            'title' => $title,
-            'body'  => $body,
-            'type'  => $type,
-        ]);
+        $notification = null;
 
-        //  2. Sync ke Firestore
-        try {
-            $factory = (new Factory)->withServiceAccount(config('firebase.credentials.file'));
-            $firestore = $factory->createFirestore()->database();
+if (!$silent) {
 
-            $firestore->collection('notifications')
-                ->document('N' . $notification->notification_id)
-                ->set([
-                    'patient_id' => $patientId,
-                    'title' => $title,
-                    'body' => $body,
-                    'type' => $type,
-                    'created_at' => now()->toDateTimeString(),
-                    'is_read' => false,
-                ]);
-        } catch (\Throwable $e) {
-            Log::error(' Firestore sync failed: ' . $e->getMessage());
-        }
+    // 1. Simpan ke MySQL
+    $notification = Notification::create([
+        'patient_id' => $patientId,
+        'title' => $title,
+        'body'  => $body,
+        'type'  => $type,
+    ]);
 
+    // 2. Sync ke Firestore
+    try {
+        $factory = (new Factory)
+            ->withServiceAccount(config('firebase.file'));
+
+        $firestore = $factory->createFirestore()->database();
+
+        $firestore->collection('notifications')
+            ->document('N' . $notification->notification_id)
+            ->set([
+                'patient_id' => $patientId,
+                'title' => $title,
+                'body' => $body,
+                'type' => $type,
+                'created_at' => now()->toDateTimeString(),
+                'is_read' => false,
+            ]);
+    } catch (\Throwable $e) {
+        Log::error('Firestore sync failed: ' . $e->getMessage());
+    }
+}
         //  3. Push noti ke device user via FCM V1
         $patient = Patient::find($patientId);
         if ($patient && $patient->fcm_token) {
