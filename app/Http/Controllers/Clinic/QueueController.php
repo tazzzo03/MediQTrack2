@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Google\Cloud\Firestore\FirestoreClient;
 use App\Http\Controllers\Api\FCMController;
 use App\Services\SupabaseService;
+use App\Services\FirestoreRestService;
 use Carbon\Carbon;
 use App\Jobs\DeleteQueueFromFirestore;
 
@@ -352,48 +353,28 @@ class QueueController extends Controller
 
     Log::info('Next patient function triggered');
 
-    // Sync ke Firestore
+    // Sync ke Firestore (REST, bypass gRPC)
     try {
-        $projectId = env('FIREBASE_PROJECT_ID');
-        $keyPath = config('firebase.file');
-
-        if (!is_string($keyPath) || !file_exists($keyPath)) {
-            Log::error('Firestore key file missing for now serving update', [
-                'keyPath' => $keyPath,
-            ]);
-            return response()->json([
-                'success' => false,
-                'error' => 'Firestore credentials file not found.',
-            ]);
-        }
-
-        $firestore = new FirestoreClient([
-            'projectId' => $projectId,
-            'keyFilePath' => $keyPath,
-            'transport' => 'rest',
-        ]);
-
         $clinicId = $next->clinic_id ?? 1;
-
-        $docRef = $firestore->collection('clinics')
-            ->document('CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT))
-            ->collection('live')
-            ->document('now_serving');
-
         $roomKey = (string) $next->room_id;
+        $docPath = 'clinics/CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT) . '/live/now_serving';
 
-
-        $docRef->set([
+        $fields = [
             'counters' => [
                 $roomKey => [
                     'label' => $next->queue_number,
                     'counter' => $next->room->name ?? 'Room',
                     'doctor' => $next->room->doctor_name ?? '',
-                    'roomId' => $next->room_id,
-                    'updatedAt' => now()->toIso8601String(),
+                    'roomId' => (int) $next->room_id,
+                    'updatedAt' => now(),
                 ],
             ],
-        ], ['merge' => true]);
+        ];
+
+        $updateMask = ["counters.$roomKey"];
+
+        $firestore = new FirestoreRestService();
+        $firestore->patchDocument($docPath, $fields, $updateMask);
 
         Log::info('Firestore updated successfully for now serving: ' . $next->queue_number);
 
@@ -514,17 +495,18 @@ class QueueController extends Controller
         // Dapatkan now serving (firestore)
         $clinicId = $queue->clinic_id ?? 1;
 
-        // Fix for gRPC DNS/TLS issues on Windows
-        putenv('GRPC_ENABLE_FORK_SUPPORT=1');
-        putenv('GRPC_DNS_RESOLVER=native');
-
-        $factory = (new \Kreait\Firebase\Factory)->withServiceAccount(config('firebase.credentials.file'));
-        $db = $factory->createFirestore()->database();
-
-        $nowDoc = $db->collection('clinics')->document('CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT))
-            ->collection('live')->document('now_serving')->snapshot();
-
-        $nowServingSeq = $nowDoc->exists() ? ($nowDoc->data()['nowServingSeq'] ?? 0) : 0;
+        $nowServingSeq = 0;
+        try {
+            $docPath = 'clinics/CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT) . '/live/now_serving';
+            $firestore = new FirestoreRestService();
+            $doc = $firestore->getDocument($docPath);
+            $fields = $firestore->decodeFields($doc['fields'] ?? []);
+            $nowServingSeq = (int) ($fields['nowServingSeq'] ?? 0);
+        } catch (\Throwable $e) {
+            Log::error('myQueue Firestore REST read failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // kira direct dari DB ikut klinik, tarikh hari ini, dan status aktif
         $activeStatuses = ['waiting', 'in_consultation', 'serving', 'pharmacy'];
@@ -563,33 +545,25 @@ class QueueController extends Controller
         }
 
         try {
-            $projectId = env('FIREBASE_PROJECT_ID');
-            $keyPath = config('firebase.file');
-
-            if (!is_string($keyPath) || !file_exists($keyPath)) {
-                Log::error('clearNowServing failed: Firestore key file missing', [
-                    'keyPath' => $keyPath,
-                ]);
-                return;
-            }
-
-            $firestore = new \Google\Cloud\Firestore\FirestoreClient([
-                'keyFilePath' => $keyPath,
-                'projectId' => $projectId,
-                'transport' => 'rest',
-            ]);
-
-            $docRef = $firestore->collection('clinics')
-                ->document('CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT))
-                ->collection('live')
-                ->document('now_serving');
-
             $roomKey = (string) $roomId;
+            $docPath = 'clinics/CL' . str_pad($clinicId, 2, '0', STR_PAD_LEFT) . '/live/now_serving';
 
-            $docRef->update([
-                ['path' => "counters.$roomKey.label", 'value' => ''],
-                ['path' => "counters.$roomKey.updatedAt", 'value' => (new \DateTime())->format('c')],
-            ]);
+            $fields = [
+                'counters' => [
+                    $roomKey => [
+                        'label' => '',
+                        'updatedAt' => now(),
+                    ],
+                ],
+            ];
+
+            $updateMask = [
+                "counters.$roomKey.label",
+                "counters.$roomKey.updatedAt",
+            ];
+
+            $firestore = new FirestoreRestService();
+            $firestore->patchDocument($docPath, $fields, $updateMask);
         } catch (\Throwable $e) {
             Log::error('Failed to clear now_serving: ' . $e->getMessage());
         }
@@ -603,37 +577,17 @@ class QueueController extends Controller
                 return;
             }
 
-            $projectId = env('FIREBASE_PROJECT_ID');
-            $keyPath = config('firebase.file');
+            $docPath = 'queues/' . $queue->patient->firebase_uid;
+            $fields = [
+                'firebase_uid' => $queue->patient->firebase_uid,
+                'queue_number' => $queue->queue_number,
+                'status' => $queue->status,
+                'updated_at' => now()->timestamp,
+            ];
+            $updateMask = ['firebase_uid', 'queue_number', 'status', 'updated_at'];
 
-            Log::info('Firestore config check', [
-                'projectId' => $projectId,
-                'keyPath'   => $keyPath,
-                'exists'    => file_exists($keyPath),
-            ]);
-
-            if (!is_string($keyPath) || !file_exists($keyPath)) {
-                Log::error('Firestore sync failed: missing credentials file', [
-                    'keyPath' => $keyPath,
-                ]);
-                return;
-            }
-
-            // ' Init Firestore
-            $firestore = new \Google\Cloud\Firestore\FirestoreClient([
-                'keyFilePath' => $keyPath,
-                'projectId'   => $projectId,
-                'transport'   => 'rest',
-            ]);
-
-            $firestore->collection('queues')
-                ->document($queue->patient->firebase_uid)
-                ->set([
-                    'firebase_uid' => $queue->patient->firebase_uid,
-                    'queue_number' => $queue->queue_number,
-                    'status'       => $queue->status,
-                    'updated_at'   => now()->timestamp,
-                ], ['merge' => true]);
+            $firestore = new FirestoreRestService();
+            $firestore->patchDocument($docPath, $fields, $updateMask);
 
             Log::info('Firestore synced for ' . $queue->queue_number . ' (' . $queue->status . ')');
 
