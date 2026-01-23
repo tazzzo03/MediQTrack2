@@ -53,18 +53,22 @@ if (!$silent) {
             return $notification;
         }
 
-        if (!$patient->fcm_token) {
-            Log::warning('FCM skipped: missing token', ['patient_id' => $patientId]);
+        $token = trim((string) $patient->fcm_token);
+        if ($token === '' || $token === 'null' || $token === 'undefined') {
+            Log::warning('FCM skipped: missing token', [
+                'patient_id' => $patientId,
+                'token_len' => strlen($token),
+            ]);
             return $notification;
         }
 
         Log::info('FCM sending', [
             'patient_id' => $patientId,
-            'token_tail' => substr($patient->fcm_token, -8),
+            'token_tail' => substr($token, -8),
         ]);
 
-        if ($patient && $patient->fcm_token) {
-            $this->sendFcmV1($patient->fcm_token, $title, $body);
+        if ($token) {
+            $this->sendFcmV1($token, $title, $body);
         }
 
         return $notification;

@@ -47,6 +47,13 @@ class PatientMobileController extends Controller
 
         $patient->update(['fcm_token' => $fcmToken]);
 
+        \Log::info('FCM token updated', [
+            'patient_id' => $patient->id,
+            'firebase_uid' => $firebaseUid,
+            'token_len' => strlen($fcmToken),
+            'token_tail' => substr($fcmToken, -8),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'FCM token updated successfully',
