@@ -367,13 +367,17 @@ class QueueController extends Controller
         $roomKey = (string) $next->room_id;
 
 
-        $docRef->update([
-            ['path' => "counters.$roomKey.label", 'value' => $next->queue_number],
-            ['path' => "counters.$roomKey.counter", 'value' => $next->room->name ?? 'Room'],
-            ['path' => "counters.$roomKey.doctor", 'value' => $next->room->doctor_name ?? ''],
-            ['path' => "counters.$roomKey.roomId", 'value' => $next->room_id],
-            ['path' => "counters.$roomKey.updatedAt", 'value' => now()->toIso8601String()],
-        ]);
+        $docRef->set([
+            'counters' => [
+                $roomKey => [
+                    'label' => $next->queue_number,
+                    'counter' => $next->room->name ?? 'Room',
+                    'doctor' => $next->room->doctor_name ?? '',
+                    'roomId' => $next->room_id,
+                    'updatedAt' => now()->toIso8601String(),
+                ],
+            ],
+        ], ['merge' => true]);
 
         Log::info('Firestore updated successfully for now serving: ' . $next->queue_number);
 
@@ -692,5 +696,4 @@ public function countdownEnded(Request $request)
     }
 
 }
-
 
