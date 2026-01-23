@@ -33,6 +33,7 @@
           <option value="">All</option>
           <option value="completed" {{ $statusFilter === 'completed' ? 'selected' : '' }}>Completed</option>
           <option value="cancelled" {{ $statusFilter === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+          <option value="auto_cancelled" {{ $statusFilter === 'auto_cancelled' ? 'selected' : '' }}>Auto Cancelled</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -62,8 +63,16 @@
         <tbody>
           @forelse($queues as $index => $queue)
             @php
-              $statusLabel = $queue->status === 'completed' ? 'Completed' : 'Cancelled';
-              $statusClass = $queue->status === 'completed' ? 'bg-primary' : 'bg-danger';
+              if ($queue->status === 'completed') {
+                $statusLabel = 'Completed';
+                $statusClass = 'bg-primary';
+              } elseif ($queue->status === 'auto_cancelled') {
+                $statusLabel = 'Auto Cancelled';
+                $statusClass = 'bg-warning text-dark';
+              } else {
+                $statusLabel = 'Cancelled';
+                $statusClass = 'bg-danger';
+              }
               $dateValue = $queue->created_at ? $queue->created_at->format('Y-m-d') : '-';
               $timeValue = null;
               if ($queue->status === 'completed') {
