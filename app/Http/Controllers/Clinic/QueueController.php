@@ -343,6 +343,7 @@ class QueueController extends Controller
     }
 
     $next->save();
+    $this->syncQueueToFirestore($next);
 
     // '" Hantar notifikasi kepada patient yang dipanggil
     FCMController::sendToPatient(
