@@ -17,32 +17,85 @@ class QueueActionHandler
             ->where('action_code', $actionCode)
             ->first();
 
-        switch ($actionCode) {
-            case 'SET_STATE_WAITING':
-                $this->upsertQueueState($queue->queue_id, 'waiting');
-                break;
-            case 'SET_STATE_FINAL_CALL':
-                $this->upsertQueueState($queue->queue_id, 'final_call');
-                break;
-            case 'START_FINAL_COUNTDOWN':
-                $this->startCountdown($queue->queue_id);
-                break;
-            case 'STOP_FINAL_COUNTDOWN':
-                $this->stopCountdown($queue->queue_id);
-                break;
-            case 'REMOVE_FROM_QUEUE':
-                $this->removeFromQueue($queue);
-                break;
-            case 'NOTIFY_RETURN_TO_CLINIC':
-                $this->notifyReturnToClinic($queue);
-                break;
+        if (!$action) {
+            return;
         }
 
-        if ($action && (bool) $action->removes_user) {
-            $this->removeFromQueue($queue);
+        $steps = $this->parseSteps($action->steps_json ?? null);
+        if (empty($steps)) {
+            return;
         }
 
-        $this->maybeNotifyAction($action, $queue);
+        $this->executeSteps($steps, $action, $queue);
+    }
+
+    private function parseSteps(?string $stepsJson): array
+    {
+        if (!$stepsJson) {
+            return [];
+        }
+
+        $decoded = json_decode($stepsJson, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    private function executeSteps(array $steps, object $action, Queue $queue): void
+    {
+        foreach ($steps as $step) {
+            if (!is_array($step) || empty($step['type'])) {
+                continue;
+            }
+
+            switch ($step['type']) {
+                case 'set_state':
+                    if (!empty($step['state'])) {
+                        $this->upsertQueueState($queue->queue_id, $step['state']);
+                    }
+                    break;
+                case 'start_countdown':
+                    $this->startCountdown($queue->queue_id);
+                    break;
+                case 'stop_countdown':
+                    $this->stopCountdown($queue->queue_id);
+                    break;
+                case 'remove_from_queue':
+                    $this->removeFromQueue($queue);
+                    break;
+                case 'notify':
+                    $this->sendNotificationFromStep($step, $action, $queue);
+                    break;
+            }
+        }
+    }
+
+    private function sendNotificationFromStep(array $step, object $action, Queue $queue): void
+    {
+        if (!$queue->patient_id) {
+            return;
+        }
+
+        $title = $step['title'] ?? 'Queue Alert';
+        $message = $step['message'] ?? ($action->message_template ?? null);
+        if (!$message) {
+            return;
+        }
+
+        $message = str_replace(
+            '{minutes}',
+            (string) ($action->countdown_minutes ?? ''),
+            $message
+        );
+
+        $this->notificationService->sendToPatient(
+            $queue->patient_id,
+            $title,
+            $message,
+            'queue'
+        );
     }
 
     private function upsertQueueState(int $queueId, string $state): void
@@ -97,35 +150,4 @@ class QueueActionHandler
         }
     }
 
-    private function notifyReturnToClinic(Queue $queue): void
-    {
-        if ($queue->patient_id) {
-            $this->notificationService->sendToPatient(
-                $queue->patient_id,
-                'Please return to clinic',
-                'Your queue is now approaching. Please return to the clinic.',
-                'queue'
-            );
-        }
-    }
-
-    private function maybeNotifyAction(?object $action, Queue $queue): void
-    {
-        if (!$action || !$queue->patient_id || empty($action->message_template)) {
-            return;
-        }
-
-        $message = str_replace(
-            '{minutes}',
-            (string) ($action->countdown_minutes ?? ''),
-            $action->message_template
-        );
-
-        $this->notificationService->sendToPatient(
-            $queue->patient_id,
-            'Queue Alert',
-            $message,
-            'queue'
-        );
-    }
 }
