@@ -87,12 +87,8 @@
                   <div class="modal-body">
                     @php
                       $fullName = $patient->name ?? 'Unknown';
-                      $nameParts = preg_split('/\s+/', trim($fullName));
-                      $shortName = count($nameParts) > 1
-                        ? ($nameParts[0] . ' ' . $nameParts[1])
-                        : $fullName;
                     @endphp
-                    <p><strong>Name:</strong> {{ $shortName }}</p>
+                    <p><strong>Name:</strong> {{ $fullName }}</p>
                     <p><strong>Email:</strong> {{ $patient->email ?? '-' }}</p>
                     <p><strong>Phone:</strong> {{ $patient->phone_number ?? '-' }}</p>
                     <p><strong>IC Number:</strong> {{ $patient->ic_number ?? '-' }}</p>
