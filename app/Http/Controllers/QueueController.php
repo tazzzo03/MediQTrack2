@@ -373,6 +373,7 @@ class QueueController extends Controller
         QueueRuleEngine $ruleEngine,
         QueueActionHandler $actionHandler
     ) {
+        Log::info('processQueueRules input', $request->all());
         $queue = Queue::where('queue_id', $request->input('queue_id'))->firstOrFail();
 
 
