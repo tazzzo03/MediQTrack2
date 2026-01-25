@@ -105,8 +105,6 @@ class QueueActionHandler
             ['queue_id' => $queueId],
             [
                 'state' => $state,
-                'updated_at' => now(),
-                'created_at' => now(),
             ]
         );
     }
@@ -119,8 +117,6 @@ class QueueActionHandler
             [
                 'end_time' => $endTime,
                 'is_active' => 1,
-                'updated_at' => now(),
-                'created_at' => now(),
             ]
         );
     }
@@ -132,7 +128,6 @@ class QueueActionHandler
             ->update([
                 'is_active' => 0,
                 'end_time' => now(),
-                'updated_at' => now(),
             ]);
     }
 
