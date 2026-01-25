@@ -451,6 +451,21 @@ document.addEventListener('click', async function(e) {
 </script>
 
 <script>
+document.addEventListener('submit', function(e) {
+  const form = e.target;
+  const submitBtn = form?.querySelector('button[type="submit"]');
+  if (!submitBtn) {
+    return;
+  }
+  if (!submitBtn.dataset.originalHtml) {
+    submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+  }
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = 'Processing...';
+});
+</script>
+
+<script>
 (() => {
   const staffTabBtn = document.getElementById('staff-tab');
   const doctorTabBtn = document.getElementById('doctor-tab');
