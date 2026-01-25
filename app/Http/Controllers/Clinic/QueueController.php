@@ -514,10 +514,10 @@ class QueueController extends Controller
             ]);
         }
 
-        // kira direct dari DB ikut klinik, tarikh hari ini, dan status "waiting"
+        // kira direct dari DB ikut klinik, tarikh hari ini, dan status "waiting" atau "in_consultation"
         $peopleAhead = Queue::where('clinic_id', $clinicId)
             ->whereDate('created_at', today())
-            ->where('status', 'waiting')
+            ->whereIn('status', ['waiting', 'in_consultation'])
             ->where('queue_seq', '<', $queue->queue_seq)
             ->count();
 
