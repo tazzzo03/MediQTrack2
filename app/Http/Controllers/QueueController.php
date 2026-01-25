@@ -384,6 +384,8 @@ class QueueController extends Controller
             'countdown_ended' => (bool) DB::table('queue_countdowns')
                 ->where('queue_id', $queue->queue_id)
                 ->where('is_active', false)
+                ->whereNotNull('end_time')
+                ->where('end_time', '<=', now())
                 ->value('end_time'),
         ];
 

@@ -57,7 +57,8 @@ class QueueActionHandler
                     }
                     break;
                 case 'start_countdown':
-                    $this->startCountdown($queue->queue_id);
+                    $minutes = isset($step['minutes']) ? (int) $step['minutes'] : null;
+                    $this->startCountdown($queue->queue_id, $minutes);
                     break;
                 case 'stop_countdown':
                     $this->stopCountdown($queue->queue_id);
@@ -110,13 +111,13 @@ class QueueActionHandler
         );
     }
 
-    private function startCountdown(int $queueId): void
+    private function startCountdown(int $queueId, ?int $minutes = null): void
     {
+        $endTime = $minutes ? now()->addMinutes($minutes) : null;
         DB::table('queue_countdowns')->updateOrInsert(
             ['queue_id' => $queueId],
             [
-                'started_at' => now(),
-                'ended_at' => null,
+                'end_time' => $endTime,
                 'is_active' => 1,
                 'updated_at' => now(),
                 'created_at' => now(),
@@ -129,8 +130,8 @@ class QueueActionHandler
         DB::table('queue_countdowns')
             ->where('queue_id', $queueId)
             ->update([
-                'ended_at' => now(),
                 'is_active' => 0,
+                'end_time' => now(),
                 'updated_at' => now(),
             ]);
     }
