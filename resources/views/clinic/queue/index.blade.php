@@ -294,6 +294,24 @@
 
 <script>
 document.addEventListener('click', async function(e) {
+  const setButtonLoading = (btn, loading, label) => {
+    if (!btn) {
+      return;
+    }
+    if (loading) {
+      if (!btn.dataset.originalHtml) {
+        btn.dataset.originalHtml = btn.innerHTML;
+      }
+      btn.disabled = true;
+      btn.innerHTML = label || 'Processing...';
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.originalHtml) {
+        btn.innerHTML = btn.dataset.originalHtml;
+        delete btn.dataset.originalHtml;
+      }
+    }
+  };
 
   // 🧩 COMPLETE BUTTON (patient finished consultation)
   if (e.target.closest('#completeBtn')) {
@@ -305,6 +323,8 @@ document.addEventListener('click', async function(e) {
     }
 
     try {
+      const completeBtn = e.target.closest('#completeBtn');
+      setButtonLoading(completeBtn, true, 'Completing...');
 
       const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -324,6 +344,7 @@ document.addEventListener('click', async function(e) {
       try {
         data = JSON.parse(text);
       } catch (err) {
+        setButtonLoading(completeBtn, false);
         alert('⚠️ Invalid JSON from server:\n' + text);
         return;
       }
@@ -356,6 +377,7 @@ document.addEventListener('click', async function(e) {
 
     } catch (err) {
       console.error(err);
+      setButtonLoading(completeBtn, false);
       alert('❌ Error completing consultation: ' + err.message);
     }
   }
@@ -370,7 +392,10 @@ document.addEventListener('click', async function(e) {
       return;
     }
 
+    let nextBtn;
     try {
+      nextBtn = e.target.closest('#nextBtn');
+      setButtonLoading(nextBtn, true, 'Calling...');
       const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
       const res = await fetch(`/clinic/queue/next/${roomId}`, {
         method: 'PATCH',
@@ -388,6 +413,7 @@ document.addEventListener('click', async function(e) {
       try {
         data = JSON.parse(raw);
       } catch (err) {
+        setButtonLoading(nextBtn, false);
         alert('⚠️ Could not parse server response:\n' + raw);
         return;
       }
@@ -405,19 +431,18 @@ document.addEventListener('click', async function(e) {
             <button id="completeBtn" class="btn btn-success px-4 me-2" type="button">
               <i class="fa-solid fa-check me-1"></i> Complete
             </button>
-            <button id="nextBtn" class="btn btn-outline-primary px-4" type="button">
-              <i class="fa-solid fa-forward me-1"></i> Next Patient
-            </button>
           </form>
         `;
         alert('✅ ' + (data.message || 'Next patient called.'));
       } else {
+        setButtonLoading(nextBtn, false);
         panel.innerHTML = `<h6 class="text-muted">No waiting patients.</h6>`;
         alert('ℹ️ ' + (data.message || 'No waiting patients.'));
       }
 
     } catch (err) {
       console.error(err);
+      setButtonLoading(nextBtn, false);
       alert('❌ JS Error: ' + err.message);
     }
   }
